@@ -95,6 +95,25 @@
       rampSpeed: 0.7,
       minSpawn: 6,
     },
+    impossible: {
+      label: 'Unmöglich',
+      hint: 'Unmöglich: verfolgende Blöcke jagen dich 5 Sekunden lang, dann splitten sie sich in drei!',
+      vertical: true,
+      horizontal: true,
+      allowUpDown: true,
+      fromAllSides: true,
+      bounce: true,
+      split: true,
+      accelerate: true,
+      homing: 300,
+      homingSplit: 3,
+      baseSpeed: 5.6,
+      spawnInterval: 26,
+      rampInterval: 220,
+      rampSpawn: 2,
+      rampSpeed: 0.7,
+      minSpawn: 6,
+    },
     infinite: {
       label: 'Unendlich',
       hint: 'Unendlich: alles aus Gott + Blöcke prallen einmal von der Wand ab bevor sie verschwinden.',
@@ -262,6 +281,7 @@
 
     const speed = baseSpeed + Math.random() * 2;
     let o = { w: size, h: size, rot: 0, vr: (Math.random() - 0.5) * 0.1, vx: 0, vy: 0, bounces: 0 };
+    if (cfg.homing) o.homing = cfg.homing;
 
     if (dir === 'down') {
       o.x = Math.random() * (W - size);
@@ -328,6 +348,40 @@
 
     for (let i = obstacles.length - 1; i >= 0; i--) {
       const o = obstacles[i];
+      // Homing steering (Unmöglich): tracks player until timer expires, then splits.
+      if (o.homing && o.homing > 0) {
+        const cx = o.x + o.w / 2, cy = o.y + o.h / 2;
+        const dx = player.x - cx, dy = player.y - cy;
+        const d = Math.hypot(dx, dy) || 1;
+        const sp = Math.hypot(o.vx, o.vy) || cfg.baseSpeed;
+        // Blend current velocity toward player direction
+        const tvx = (dx / d) * sp;
+        const tvy = (dy / d) * sp;
+        const k = 0.08;
+        o.vx = o.vx * (1 - k) + tvx * k;
+        o.vy = o.vy * (1 - k) + tvy * k;
+        o.rot += 0.08;
+        o.homing--;
+        if (o.homing === 0 && cfg.homingSplit && cfg.homingSplit > 1) {
+          const parts = cfg.homingSplit;
+          const ns = Math.max(16, o.w / 1.6);
+          const speed = Math.max(3, Math.hypot(o.vx, o.vy));
+          const baseAng = Math.atan2(o.vy, o.vx);
+          const px = o.x + o.w / 2, py = o.y + o.h / 2;
+          for (let k2 = 0; k2 < parts; k2++) {
+            const ang = baseAng + ((k2 - (parts - 1) / 2) * (Math.PI * 2 / (parts + 1)));
+            obstacles.push({
+              x: px - ns / 2, y: py - ns / 2, w: ns, h: ns,
+              vx: Math.cos(ang) * speed,
+              vy: Math.sin(ang) * speed,
+              rot: o.rot, vr: (Math.random() - 0.5) * 0.2,
+              bounces: 0,
+            });
+          }
+          obstacles.splice(i, 1);
+          continue;
+        }
+      }
       o.x += o.vx;
       o.y += o.vy;
       o.rot += o.vr;
