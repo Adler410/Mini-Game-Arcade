@@ -2,15 +2,16 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
   <title>MediaHub Arcade — Dodge</title>
+  <meta name="description" content="MediaHub Arcade — Ein modernes Dodge-Highscore-Spiel mit vielen Modi und Schwierigkeitsgraden." />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rubik:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-    <!-- Hintergrund Glow -->
+  <!-- Hintergrund Glow -->
   <div class="bg-glow"></div>
 
   <main class="game-shell">
@@ -26,59 +27,148 @@
       </div>
     </header>
 
-    <div class="canvas-wrap">
+    <div class="canvas-wrap" id="canvasWrap">
       <canvas id="game" width="800" height="600"></canvas>
 
-      <!-- Start Overlay -->
-      <div id="startOverlay" class="overlay">
-        <div class="overlay-card">
-          <h2>Bereit?</h2>
-          <p>Weiche den Blöcken aus. Steuere mit <b>Pfeiltasten</b>, <b>WASD</b>, <b>Maus</b> oder per <b>Touch</b>.</p>
-          <div class="difficulty">
-            <span class="diff-label">Schwierigkeit</span>
-            <div class="diff-options" role="radiogroup" aria-label="Schwierigkeit">
-              <button type="button" class="diff-btn active" data-diff="easy">Einfach</button>
-              <button type="button" class="diff-btn" data-diff="medium">Mittel</button>
-              <button type="button" class="diff-btn" data-diff="hard">Schwer</button>
-            <button type="button" class="diff-btn" data-diff="extreme">Extrem</button>
-            <button type="button" class="diff-btn" data-diff="god">Gott</button>
-            <button type="button" class="diff-btn" data-diff="impossible">Unmöglich</button>
-            <button type="button" class="diff-btn" data-diff="infinite">Unendlich</button>
-            </div>
-            <p class="diff-hint" id="diffHint">Blöcke fallen von oben. Bewege dich links/rechts.</p>
+      <!-- In-game HUD overlay (Zeit, Speed) -->
+      <div class="ingame-hud" id="ingameHud">
+        <div class="chip"><span class="chip-label">Zeit</span><span id="hudTime">0.0s</span></div>
+        <div class="chip"><span class="chip-label">Speed</span><span id="hudSpeed">0.0</span></div>
+        <div class="chip"><span class="chip-label">Ausgewichen</span><span id="hudDodged">0</span></div>
+      </div>
+
+      <!-- Virtueller Joystick -->
+      <div class="joystick" id="joystick" aria-hidden="true">
+        <div class="joystick-stick" id="joystickStick"></div>
+      </div>
+
+      <!-- ================= MAIN MENU ================= -->
+      <div id="mainMenu" class="overlay">
+        <div class="overlay-card menu-card">
+          <div class="menu-logo">
+            <div class="logo-ring"></div>
+            <span>MediaHub Arcade</span>
           </div>
-          <button id="startBtn" class="btn-primary">Spiel starten</button>
+          <p class="menu-sub">Weiche den Blöcken aus. Sammle Punkte. Werde legendär.</p>
+
+          <button id="btnPlay" class="btn-primary btn-lg">▶ Spielen</button>
+
+          <div class="menu-actions">
+            <button class="btn-ghost" data-menu="highscores">🏆 Highscores</button>
+            <button class="btn-ghost" data-menu="settings">⚙ Einstellungen</button>
+            <button class="btn-ghost" data-menu="help">? Anleitung</button>
+          </div>
         </div>
       </div>
 
-      <!-- Game Over Overlay -->
-      <div id="gameOverOverlay" class="overlay hidden">
-        <div class="overlay-card">
-          <h2>Game Over</h2>
-          <p>Score: <span id="finalScore">0</span></p>
-          <p class="muted">Best: <span id="finalBest">0</span></p>
-          <div class="difficulty">
-            <span class="diff-label">Schwierigkeit</span>
-            <div class="diff-options" role="radiogroup" aria-label="Schwierigkeit">
-              <button type="button" class="diff-btn active" data-diff="easy">Einfach</button>
-              <button type="button" class="diff-btn" data-diff="medium">Mittel</button>
-              <button type="button" class="diff-btn" data-diff="hard">Schwer</button>
-            <button type="button" class="diff-btn" data-diff="extreme">Extrem</button>
-            <button type="button" class="diff-btn" data-diff="god">Gott</button>
-            <button type="button" class="diff-btn" data-diff="impossible">Unmöglich</button>
-            <button type="button" class="diff-btn" data-diff="infinite">Unendlich</button>
-            </div>
+      <!-- ================= PLAY SETUP ================= -->
+      <div id="playSetup" class="overlay hidden">
+        <div class="overlay-card wide-card">
+          <button class="close-x" data-close="playSetup" aria-label="Zurück">←</button>
+          <h2>Spiel starten</h2>
+
+          <div class="section">
+            <div class="section-title">Modus</div>
+            <div class="mode-grid" id="modeGrid"></div>
           </div>
-          <button id="restartBtn" class="btn-primary">Nochmal spielen</button>
+
+          <div class="section">
+            <div class="section-title">Schwierigkeit</div>
+            <div class="diff-options" id="diffOptions" role="radiogroup" aria-label="Schwierigkeit"></div>
+            <div class="diff-meta" id="diffMeta"></div>
+          </div>
+
+          <button id="startBtn" class="btn-primary btn-lg">Los geht's</button>
+        </div>
+      </div>
+
+      <!-- ================= HIGHSCORES ================= -->
+      <div id="highscores" class="overlay hidden">
+        <div class="overlay-card wide-card">
+          <button class="close-x" data-close="highscores" aria-label="Zurück">←</button>
+          <h2>🏆 Highscores</h2>
+          <div class="hs-list" id="hsList"></div>
+          <button class="btn-ghost small" id="hsReset">Bestwerte zurücksetzen</button>
+        </div>
+      </div>
+
+      <!-- ================= SETTINGS ================= -->
+      <div id="settings" class="overlay hidden">
+        <div class="overlay-card">
+          <button class="close-x" data-close="settings" aria-label="Zurück">←</button>
+          <h2>⚙ Einstellungen</h2>
+          <label class="toggle">
+            <input type="checkbox" id="setSound" />
+            <span>Sound-Effekte</span>
+          </label>
+          <label class="toggle">
+            <input type="checkbox" id="setShake" checked />
+            <span>Screen Shake</span>
+          </label>
+          <label class="toggle">
+            <input type="checkbox" id="setJoystick" checked />
+            <span>Virtueller Joystick (Touch)</span>
+          </label>
+          <label class="toggle">
+            <input type="checkbox" id="setReduced" />
+            <span>Reduzierte Animationen</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- ================= HELP ================= -->
+      <div id="help" class="overlay hidden">
+        <div class="overlay-card">
+          <button class="close-x" data-close="help" aria-label="Zurück">←</button>
+          <h2>Anleitung</h2>
+          <ul class="help-list">
+            <li><b>Steuerung:</b> Pfeiltasten / WASD, Maus, Touch oder virtueller Joystick.</li>
+            <li><b>Ziel:</b> Weiche allen Blöcken aus so lange wie möglich.</li>
+            <li><b>Punkte:</b> Jeder ausgewichene Block = 1 Punkt × Multiplikator.</li>
+            <li><b>Schwierigkeit:</b> steigert Speed & Spawnrate — je höher, desto mehr Multiplikator.</li>
+            <li><b>Modi:</b> ändern die Regeln (Zeitlimit, Zen, Reverse etc.).</li>
+            <li><b>Pause:</b> Leertaste oder P.</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- ================= PAUSE ================= -->
+      <div id="pauseOverlay" class="overlay hidden">
+        <div class="overlay-card small-card">
+          <h2>Pause</h2>
+          <button id="btnResume" class="btn-primary">Weiter</button>
+          <button class="btn-ghost" id="btnQuit">Zum Menü</button>
+        </div>
+      </div>
+
+      <!-- ================= GAME OVER ================= -->
+      <div id="gameOverOverlay" class="overlay hidden">
+        <div class="overlay-card wide-card">
+          <h2 id="goTitle">Game Over</h2>
+          <p id="goSub" class="muted">Runde beendet</p>
+
+          <div class="stats-grid" id="statsGrid">
+            <div class="stat"><span class="stat-label">Punkte</span><span class="stat-value" data-stat="score">0</span></div>
+            <div class="stat"><span class="stat-label">Überlebenszeit</span><span class="stat-value" data-stat="time">0.0s</span></div>
+            <div class="stat"><span class="stat-label">Max. Speed</span><span class="stat-value" data-stat="speed">0.0</span></div>
+            <div class="stat"><span class="stat-label">Ausgewichen</span><span class="stat-value" data-stat="dodged">0</span></div>
+            <div class="stat"><span class="stat-label">Bestwert</span><span class="stat-value" data-stat="best">0</span></div>
+            <div class="stat"><span class="stat-label">Ø letzte 10</span><span class="stat-value" data-stat="avg">0</span></div>
+          </div>
+
+          <div class="go-actions">
+            <button id="restartBtn" class="btn-primary">↻ Nochmal</button>
+            <button id="menuBtn" class="btn-ghost">Menü</button>
+          </div>
         </div>
       </div>
     </div>
 
     <footer class="footnote">
-      Crafted for <span class="brand">MediaHub</span> · Anime Arcade Edition
+      Crafted for <span class="brand">MediaHub</span> · Arcade Edition
     </footer>
   </main>
 
-  <script src="script.js"></script>
+  <script type="module" src="script.js"></script>
 </body>
 </html>
