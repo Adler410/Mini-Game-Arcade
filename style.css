@@ -24,7 +24,8 @@ html, body {
   background: var(--bg-0);
   color: var(--text);
   font-family: 'Rubik', system-ui, sans-serif;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
   -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
 }
@@ -44,13 +45,13 @@ html, body {
 
 /* Layout */
 .game-shell {
-  height: 100%;
+  min-height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 24px 20px;
-  gap: 16px;
+  padding: clamp(10px, 2vw, 24px);
+  gap: clamp(8px, 1.5vw, 16px);
 }
 
 /* HUD */
@@ -107,6 +108,7 @@ html, body {
   width: 100%;
   max-width: 820px;
   aspect-ratio: 4 / 3;
+  max-height: calc(100vh - 160px);
   border-radius: 22px;
   overflow: hidden;
   border: 1px solid var(--border);
@@ -161,8 +163,9 @@ canvas { display: block; width: 100%; height: 100%; }
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   animation: fadeIn .28s ease;
-  padding: 20px;
+  padding: clamp(8px, 2vw, 20px);
   overflow-y: auto;
+  overscroll-behavior: contain;
 }
 .overlay.hidden { display: none; }
 .overlay.fade-out { animation: fadeOut .22s ease forwards; }
@@ -170,9 +173,11 @@ canvas { display: block; width: 100%; height: 100%; }
 .overlay-card {
   position: relative;
   text-align: center;
-  padding: 28px 26px;
+  padding: clamp(16px, 3vw, 28px) clamp(14px, 3vw, 26px);
   max-width: 400px;
   width: 100%;
+  max-height: 100%;
+  overflow-y: auto;
   background: linear-gradient(180deg, rgba(28,28,40,0.9), rgba(20,20,28,0.9));
   border: 1px solid var(--border);
   border-radius: 20px;
@@ -184,11 +189,12 @@ canvas { display: block; width: 100%; height: 100%; }
 
 .overlay-card h2 {
   font-family: 'Orbitron', sans-serif;
-  font-size: 24px;
+  font-size: clamp(18px, 3vw, 24px);
   letter-spacing: 0.1em;
   margin-bottom: 12px;
   color: var(--orange-glow);
   text-shadow: 0 0 16px rgba(244,117,33,0.55);
+  word-wrap: break-word;
 }
 .overlay-card p { color: var(--text); margin-bottom: 10px; line-height: 1.5; font-size: 14px; }
 .overlay-card p.muted { color: var(--muted); font-size: 13px; }
@@ -288,7 +294,7 @@ canvas { display: block; width: 100%; height: 100%; }
 /* Mode grid */
 .mode-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
   gap: 8px;
 }
 .mode-card {
@@ -424,7 +430,7 @@ canvas { display: block; width: 100%; height: 100%; }
 /* Stats grid (Game Over) */
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
   gap: 8px;
   margin: 18px 0;
 }
@@ -528,4 +534,40 @@ body.reduced-motion .diff-btn.active { animation: none !important; }
   .overlay-card { padding: 22px 18px; }
   .close-x { top: 8px; left: 8px; }
   .joystick { left: 12px; bottom: 12px; width: 96px; height: 96px; }
+}
+
+/* Tablet + narrow desktop */
+@media (max-width: 900px) {
+  .canvas-wrap { aspect-ratio: auto; height: min(70vh, 620px); max-height: calc(100vh - 140px); }
+}
+
+@media (max-width: 640px) {
+  .canvas-wrap { height: min(65vh, 560px); max-height: calc(100vh - 120px); }
+  .hud { gap: 8px; flex-wrap: wrap; }
+  .hud-card { min-width: 0; flex: 1; }
+  .title { flex-basis: 100%; order: -1; }
+  .go-actions { flex-wrap: wrap; }
+  .go-actions .btn-primary,
+  .go-actions .btn-ghost { flex: 1; min-width: 120px; }
+  .mode-grid { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); }
+  .diff-btn { font-size: 12px; padding: 7px 10px; }
+  .ingame-hud { top: 8px; left: 8px; gap: 6px; flex-wrap: wrap; max-width: calc(100% - 16px); }
+  .chip { padding: 4px 8px; font-size: 10px; }
+}
+
+@media (max-width: 400px) {
+  .stats-grid { grid-template-columns: 1fr 1fr; }
+  .overlay-card h2 { font-size: 17px; }
+  .hud-value { font-size: 15px; }
+  .btn-lg { padding: 13px 24px; font-size: 13px; }
+}
+
+/* Landscape phones — keep canvas visible */
+@media (max-height: 500px) and (orientation: landscape) {
+  .game-shell { padding: 6px; gap: 6px; }
+  .canvas-wrap { height: calc(100vh - 90px); aspect-ratio: auto; }
+  .footnote { display: none; }
+  .hud-card { padding: 4px 10px; }
+  .hud-value { font-size: 14px; }
+  .title { font-size: 13px; }
 }
