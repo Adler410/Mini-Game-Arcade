@@ -55,6 +55,15 @@ export class Game {
     this.onShake = opts.onShake || (() => {});
     this.onHudTick = opts.onHudTick || (() => {});
 
+    // Skin + Fähigkeiten je Runde (werden von script.js gesetzt)
+    this.skin = opts.skin || { color: '#f47521', glow: '#ff8a3d' };
+    this.abilities = [];             // aktive Abilities dieser Runde
+    this._extraHits = 0;             // Schild + Extra Leben
+    this._slowmoMs = 0;
+    this._scoreMul = 1;
+    this._modeMul = 1;               // wird aus MODE unabhängig, hier nicht genutzt
+    this._runCoins = 0;              // Anzeige-Info am Ende
+
     this.player = { x: W / 2, y: H - 70, r: 22, speed: 7 };
     this.keys = { left: false, right: false, up: false, down: false };
     this.pointer = { x: null, y: null, use: false };
@@ -151,6 +160,16 @@ export class Game {
     this.spawnTimer = 0;
     this.spawnInterval = this.cfg.spawnInterval;
     this.baseSpeed = this.cfg.baseSpeed;
+
+    // Fähigkeiten anwenden
+    this._extraHits = 0;
+    this._slowmoMs = 0;
+    this._scoreMul = 1;
+    if (this.abilities.includes('shield'))    this._extraHits += 1;
+    if (this.abilities.includes('extralife')) this._extraHits += 1;
+    if (this.abilities.includes('slowmo'))    this._slowmoMs = 6000;
+    if (this.abilities.includes('double'))    this._scoreMul = 2;
+
     // Recycle obstacles
     for (const o of this.obstacles) this._releaseObstacle(o);
     for (const p of this.particles) this._releaseParticle(p);
@@ -250,6 +269,13 @@ export class Game {
     this.elapsedMs += dt;
     const cfg = this.cfg;
     const mode = this.modeCfg;
+
+    // Zeitlupe: reduziert step effektiv (Hindernisse langsamer, Spieler normal)
+    let obstacleStep = step;
+    if (this._slowmoMs > 0) {
+      obstacleStep = step * 0.5;
+      this._slowmoMs -= dt;
+    }
 
     // Time attack
     if (mode.timeLimit && this.elapsedMs >= mode.timeLimit * 1000) {
@@ -367,13 +393,29 @@ export class Game {
         }
       }
 
-      o.x += o.vx * step;
-      o.y += o.vy * step;
-      o.rot += o.vr * step;
+      o.x += o.vx * obstacleStep;
+      o.y += o.vy * obstacleStep;
+      o.rot += o.vr * obstacleStep;
 
       // Collision
       if (!mode.invincible &&
           circleRectCollide(this.player.x, this.player.y, hitR, o.x, o.y, o.w, o.h)) {
+        if (this._extraHits > 0) {
+          this._extraHits -= 1;
+          // Block entfernen, Partikel-Effekt, kein Game Over
+          this._releaseObstacle(this.obstacles.splice(i, 1)[0]);
+          if (this.settings.shake) this.onShake();
+          for (let k3 = 0; k3 < 18; k3++) {
+            const p = this._acquireParticle();
+            p.x = this.player.x; p.y = this.player.y;
+            p.vx = (Math.random() - 0.5) * 6;
+            p.vy = (Math.random() - 0.5) * 6;
+            p.life = 40; p.max = 40;
+            p.color = '#ffd76b';
+            this.particles.push(p);
+          }
+          continue;
+        }
         this.end('crash');
         return;
       }
@@ -392,7 +434,7 @@ export class Game {
       if (off) {
         this._releaseObstacle(this.obstacles.splice(i, 1)[0]);
         this.dodged++;
-        this.score += Math.max(1, Math.round(1 * (cfg.multiplier || 1)));
+        this.score += Math.max(1, Math.round((cfg.multiplier || 1) * this._scoreMul));
         this.onScore(this.score);
       }
     }
@@ -411,6 +453,8 @@ export class Game {
       speed: this.baseSpeed,
       dodged: this.dodged,
       chaos: this._chaosLabel,
+      shield: this._extraHits,
+      slowmo: Math.max(0, this._slowmoMs / 1000),
     });
   }
 
@@ -526,17 +570,19 @@ export class Game {
     // Player
     if (this.state !== 'over') {
       ctx.save();
+      const skinCol = this.modeCfg.invincible ? '#5ac8ff' : (this.skin.color || '#f47521');
+      const skinGlow = this.modeCfg.invincible ? '#8fdfff' : (this.skin.glow || '#ff8a3d');
       const glow = ctx.createRadialGradient(this.player.x, this.player.y, 0, this.player.x, this.player.y, this.player.r * 2.2);
-      glow.addColorStop(0, 'rgba(255,138,61,0.55)');
-      glow.addColorStop(1, 'rgba(255,138,61,0)');
+      glow.addColorStop(0, hexAlpha(skinGlow, 0.55));
+      glow.addColorStop(1, hexAlpha(skinGlow, 0));
       ctx.fillStyle = glow;
       ctx.beginPath();
       ctx.arc(this.player.x, this.player.y, this.player.r * 2.2, 0, Math.PI * 2);
       ctx.fill();
 
-      ctx.shadowColor = '#f47521';
+      ctx.shadowColor = skinCol;
       ctx.shadowBlur = 20;
-      ctx.fillStyle = this.modeCfg.invincible ? '#5ac8ff' : '#f47521';
+      ctx.fillStyle = skinCol;
       ctx.beginPath();
       ctx.arc(this.player.x, this.player.y, this.player.r, 0, Math.PI * 2);
       ctx.fill();
@@ -548,6 +594,20 @@ export class Game {
       ctx.arc(this.player.x - 6, this.player.y - 6, 5, 0, Math.PI * 2);
       ctx.fill();
       ctx.globalAlpha = 1;
+
+      // Schild-Ring wenn extra Leben aktiv
+      if (this._extraHits > 0) {
+        ctx.strokeStyle = '#ffd76b';
+        ctx.lineWidth = 3;
+        ctx.globalAlpha = 0.75;
+        ctx.shadowColor = '#ffd76b';
+        ctx.shadowBlur = 16;
+        ctx.beginPath();
+        ctx.arc(this.player.x, this.player.y, this.player.r + 6, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+        ctx.shadowBlur = 0;
+      }
       ctx.restore();
     }
 
@@ -572,4 +632,13 @@ export class Game {
       ctx.restore();
     }
   }
+}
+
+/* Hex → rgba mit Alpha */
+function hexAlpha(hex, a) {
+  const h = hex.replace('#','');
+  const n = h.length === 3
+    ? h.split('').map(c => parseInt(c + c, 16))
+    : [parseInt(h.slice(0,2),16), parseInt(h.slice(2,4),16), parseInt(h.slice(4,6),16)];
+  return `rgba(${n[0]},${n[1]},${n[2]},${a})`;
 }
