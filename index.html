@@ -45,6 +45,7 @@
       <!-- ================= MAIN MENU ================= -->
       <div id="mainMenu" class="overlay">
         <div class="overlay-card menu-card">
+          <div class="topbar" id="topbar"></div>
           <div class="menu-logo">
             <div class="logo-ring"></div>
             <span>MediaHub Arcade</span>
@@ -54,6 +55,10 @@
           <button id="btnPlay" class="btn-primary btn-lg">▶ Spielen</button>
 
           <div class="menu-actions">
+            <button class="btn-ghost" data-menu="shop">🛒 Shop</button>
+            <button class="btn-ghost" data-menu="missions">🎯 Missionen</button>
+            <button class="btn-ghost" data-menu="inventory">🎒 Inventar</button>
+            <button class="btn-ghost" data-menu="statsScreen">📊 Statistiken</button>
             <button class="btn-ghost" data-menu="highscores">🏆 Highscores</button>
             <button class="btn-ghost" data-menu="settings">⚙ Einstellungen</button>
             <button class="btn-ghost" data-menu="help">? Anleitung</button>
@@ -90,6 +95,44 @@
           <h2>🏆 Highscores</h2>
           <div class="hs-list" id="hsList"></div>
           <button class="btn-ghost small" id="hsReset">Bestwerte zurücksetzen</button>
+        </div>
+      </div>
+
+      <!-- ================= SHOP ================= -->
+      <div id="shop" class="overlay hidden">
+        <div class="overlay-card wide-card">
+          <button class="close-x" data-close="shop" aria-label="Zurück">←</button>
+          <h2>🛒 Shop</h2>
+          <div class="topbar inline" id="shopTopbar"></div>
+          <div id="shopContent"></div>
+        </div>
+      </div>
+
+      <!-- ================= MISSIONS ================= -->
+      <div id="missions" class="overlay hidden">
+        <div class="overlay-card wide-card">
+          <button class="close-x" data-close="missions" aria-label="Zurück">←</button>
+          <h2>🎯 Missionen</h2>
+          <div class="topbar inline" id="missionsTopbar"></div>
+          <div id="missionsContent"></div>
+        </div>
+      </div>
+
+      <!-- ================= INVENTORY ================= -->
+      <div id="inventory" class="overlay hidden">
+        <div class="overlay-card wide-card">
+          <button class="close-x" data-close="inventory" aria-label="Zurück">←</button>
+          <h2>🎒 Inventar</h2>
+          <div id="inventoryContent"></div>
+        </div>
+      </div>
+
+      <!-- ================= STATS ================= -->
+      <div id="statsScreen" class="overlay hidden">
+        <div class="overlay-card wide-card">
+          <button class="close-x" data-close="statsScreen" aria-label="Zurück">←</button>
+          <h2>📊 Statistiken</h2>
+          <div id="statsContent"></div>
         </div>
       </div>
 
@@ -168,6 +211,18 @@
     <footer class="footnote">
       Crafted for <span class="brand">MediaHub</span> · Arcade Edition
     </footer>
+
+    <!-- Toasts / Level-Up / Mission Complete -->
+    <div class="toast-stack" id="toastStack" aria-live="polite"></div>
+    <div class="levelup-overlay hidden" id="levelupOverlay">
+      <div class="levelup-card">
+        <div class="lu-shine"></div>
+        <div class="lu-title">LEVEL UP</div>
+        <div class="lu-level" id="luLevel">LV 2</div>
+        <div class="lu-rank" id="luRank">Spieler</div>
+      </div>
+    </div>
+
   </main>
 
   <script type="module" src="script.js"></script>
