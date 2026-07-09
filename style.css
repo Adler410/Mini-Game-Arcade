@@ -157,13 +157,13 @@ canvas { display: block; width: 100%; height: 100%; }
 
 /* Overlays */
 .overlay {
-  position: absolute; inset: 0; z-index: 10;
+  position: fixed; inset: 0; z-index: 50;
   display: flex; align-items: center; justify-content: center;
-  background: rgba(8, 8, 14, 0.68);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: radial-gradient(ellipse at top, rgba(30,20,10,0.75) 0%, rgba(8,8,14,0.92) 60%, rgba(4,4,8,0.96) 100%);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   animation: fadeIn .28s ease;
-  padding: clamp(8px, 2vw, 20px);
+  padding: clamp(12px, 3vw, 32px);
   overflow-y: auto;
   overscroll-behavior: contain;
 }
@@ -174,9 +174,9 @@ canvas { display: block; width: 100%; height: 100%; }
   position: relative;
   text-align: center;
   padding: clamp(16px, 3vw, 28px) clamp(14px, 3vw, 26px);
-  max-width: 400px;
+  max-width: 440px;
   width: 100%;
-  max-height: 100%;
+  max-height: calc(100vh - 40px);
   overflow-y: auto;
   background: linear-gradient(180deg, rgba(28,28,40,0.9), rgba(20,20,28,0.9));
   border: 1px solid var(--border);
@@ -184,7 +184,7 @@ canvas { display: block; width: 100%; height: 100%; }
   box-shadow: 0 20px 60px rgba(0,0,0,0.6), var(--shadow-orange);
   animation: popIn .38s var(--ease-pop);
 }
-.wide-card { max-width: 560px; }
+.wide-card { max-width: 960px; padding: clamp(20px, 3vw, 36px) clamp(18px, 3vw, 40px); }
 .small-card { max-width: 320px; }
 
 .overlay-card h2 {
